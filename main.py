@@ -1,6 +1,10 @@
 import sys
 
-# 카테고리 정의
+# ==============================================================================
+# 1. 프로그램 기본 설정 (데이터 상자와 카테고리)
+# ==============================================================================
+
+# 프로그램에서 사용할 카테고리 종류를 리스트로 미리 정해둡니다.
 CATEGORIES = [
     "텍스트 생성",
     "이미지 생성",
@@ -10,19 +14,20 @@ CATEGORIES = [
     "기타"
 ]
 
-# 기본 데이터 (최소 3개 이상 등록)
+# 프로그램 시작 시 기본으로 들어있을 샘플 데이터입니다.
+# '리스트 [ ]' 안에 여러 개의 '딕셔너리 { }' 형태(제목, 내용, 카테고리, 즐겨찾기)로 저장됩니다.
 prompts = [
     {
         "title": "블로그 글 작성 도우미",
         "content": "당신은 10년 경력의 전문 블로거입니다. 주어진 주제에 대해 SEO에 최적화된 블로그 글을 작성해주세요. 서론, 본론, 결론 구조를 갖추고, 독자의 관심을 끄는 제목을 3개 제안해주세요.",
         "category": "텍스트 생성",
-        "favorite": True
+        "favorite": True   # True는 즐겨찾기 등록됨을 의미
     },
     {
         "title": "제품 썸네일 생성",
         "content": "다음 제품의 매력적인 썸네일 이미지를 생성하기 위한 미드저니 프롬프트를 작성해주세요. 고화질, 스튜디오 조명, 4k 스타일을 적용합니다.",
         "category": "이미지 생성",
-        "favorite": False
+        "favorite": False  # False는 즐겨찾기 안 됨을 의미
     },
     {
         "title": "IT 컨설턴트 페르소나",
@@ -33,8 +38,12 @@ prompts = [
 ]
 
 
+# ==============================================================================
+# 2. 화면 출력을 도와주는 보조 기능들
+# ==============================================================================
+
 def display_menu():
-    """메인 메뉴 출력"""
+    """사용자가 보고 선택할 메인 메뉴판을 화면에 그려주는 함수"""
     print("\n=== 나만의 프롬프트 관리 ===")
     print("1. 프롬프트 추가")
     print("2. 프롬프트 목록")
@@ -47,80 +56,102 @@ def display_menu():
 
 
 def get_star(favorite_status):
-    """즐겨찾기 여부에 따라 별표 표시"""
+    """
+    즐겨찾기 상태(True/False)를 넣으면 별 모양 문자열로 바꿔주는 함수
+    - True이면 ' ⭐' 반환
+    - False이면 아무것도 없는 글자('') 반환
+    """
     return " ⭐" if favorite_status else ""
 
 
+# ==============================================================================
+# 3. 메뉴별 실제 핵심 기능들 (1번 ~ 7번)
+# ==============================================================================
+
 def add_prompt():
-    """1. 프롬프트 추가"""
+    """[1번 메뉴] 사용자에게 정보를 입력받아 새 프롬프트를 추가하는 함수"""
     print("\n=== 프롬프트 추가 ===")
     
-    # 제목 입력
+    # [제목 입력] 아무것도 안 적고 엔터치면 다시 입력하라고 글자가 계속 뜸 (while 문)
     while True:
-        title = input("제목: ").strip()
+        title = input("제목: ").strip()  # .strip()은 실수로 누른 앞뒤 공백을 없애줌
         if title:
-            break
+            break  # 글자를 올바르게 입력했다면 반복문 탈출!
         print("제목은 필수 입력 사항입니다. 다시 입력해주세요.")
         
-    # 내용 입력
+    # [내용 입력] 제목과 마찬가지로 빈 값 방지
     while True:
         content = input("내용: ").strip()
         if content:
             break
         print("내용은 필수 입력 사항입니다. 다시 입력해주세요.")
 
-    # 카테고리 선택
+    # [카테고리 선택] 카테고리 목록을 1번부터 번호를 붙여 보여줌
     print("\n카테고리 선택:")
-    for idx, cat in enumerate(CATEGORIES, 1):
+    for idx, cat in enumerate(CATEGORIES, 1):  # enumerate(..., 1)은 1번부터 숫자를 세줌
         print(f"{idx}) {cat}")
     
     selected_category = ""
     while True:
         cat_input = input("선택: ").strip()
+        # 입력한 값이 '숫자'이고, 카테고리 개수 범위 안(1~6번)인지 확인
         if cat_input.isdigit():
             cat_num = int(cat_input)
             if 1 <= cat_num <= len(CATEGORIES):
+                # 사용자는 1번을 택하지만, 파이썬 번호표(인덱스)는 0번부터 시작하므로 -1 해줌
                 selected_category = CATEGORIES[cat_num - 1]
                 break
         print("올바른 카테고리 번호를 선택해주세요.")
 
-    # 저장
+    # 입력받은 정보를 하나의 묶음(딕셔너리)으로 만들기
     new_prompt = {
         "title": title,
         "content": content,
         "category": selected_category,
-        "favorite": False
+        "favorite": False  # 새로 만드는 건 기본적으로 즐겨찾기 해제 상태
     }
+    
+    # 전체 목록(prompts 리스트)의 맨 뒤에 새 데이터를 쏙 집어넣음
     prompts.append(new_prompt)
     print("\n프롬프트가 추가되었습니다!")
 
 
 def show_list():
-    """2. 프롬프트 목록"""
+    """[2번 메뉴] 등록된 모든 프롬프트를 번호와 함께 보여주는 함수"""
     print("\n=== 프롬프트 목록 ===")
+    
+    # 만약 프롬프트가 하나도 없다면 안내문만 출력하고 함수 종료(return)
     if not prompts:
         print("등록된 프롬프트가 없습니다.")
         return
 
+    # 저장된 데이터를 1번부터 순서대로 꺼내어 [카테고리] 제목 별표 형태로 출력
     for idx, p in enumerate(prompts, 1):
-        star = get_star(p["favorite"])
+        star = get_star(p["favorite"])  # 즐겨찾기면 ⭐, 아니면 빈 값
         print(f"{idx}. [{p['category']}] {p['title']}{star}")
     
     print(f"\n총 {len(prompts)}개의 프롬프트")
 
 
 def show_by_category():
-    """3. 카테고리별 조회"""
+    """[3번 메뉴] 사용자가 원하는 특정 카테고리의 프롬프트만 모아서 보는 함수"""
     print("\n=== 카테고리별 조회 ===")
+    
+    # 카테고리 번호 목록을 출력해서 선택하게 함
     for idx, cat in enumerate(CATEGORIES, 1):
         print(f"{idx}) {cat}")
         
     cat_input = input("선택: ").strip()
+    
+    # 숫자가 아니거나 범위(1~6)를 벗어나면 메뉴로 돌려보냄
     if not cat_input.isdigit() or not (1 <= int(cat_input) <= len(CATEGORIES)):
         print("잘못된 입력입니다. 메뉴로 돌아갑니다.")
         return
 
+    # 선택한 번호에 해당하는 카테고리 이름 가져오기
     target_category = CATEGORIES[int(cat_input) - 1]
+    
+    # 조건에 맞는 프롬프트만 골라내어 새 리스트로 만듦 (리스트 컴프리핸션 문법)
     filtered_prompts = [p for p in prompts if p["category"] == target_category]
 
     print(f"\n[{target_category}] 카테고리 프롬프트:")
@@ -128,6 +159,7 @@ def show_by_category():
         print("해당 카테고리에 등록된 프롬프트가 없습니다.")
         return
 
+    # 골라낸 데이터만 번호 매겨 출력
     for idx, p in enumerate(filtered_prompts, 1):
         star = get_star(p["favorite"])
         print(f"{idx}. {p['title']}{star}")
@@ -136,16 +168,20 @@ def show_by_category():
 
 
 def search_prompt():
-    """4. 프롬프트 검색"""
+    """[4번 메뉴] 검색어를 입력받아 제목이나 내용에 포함된 프롬프트를 찾는 함수"""
     print("\n=== 프롬프트 검색 ===")
     keyword = input("검색어: ").strip()
+    
     if not keyword:
         print("검색어를 입력해주세요.")
         return
 
     results = []
+    # 전체 데이터에서 검색어가 들어간 프롬프트를 찾음
     for idx, p in enumerate(prompts, 1):
+        # .lower()를 붙여서 영어 대소문자 구분 없이 찾을 수 있게 함
         if keyword.lower() in p["title"].lower() or keyword.lower() in p["content"].lower():
+            # 찾은 프롬프트와 원래 번호(idx)를 함께 저장
             results.append((idx, p))
 
     print("\n검색 결과:")
@@ -153,6 +189,7 @@ def search_prompt():
         print("검색 결과가 없습니다.")
         return
 
+    # 찾은 데이터만 화면에 뿌려줌
     for orig_idx, p in results:
         star = get_star(p["favorite"])
         print(f"{orig_idx}. [{p['category']}] {p['title']}{star}")
@@ -161,7 +198,7 @@ def search_prompt():
 
 
 def show_detail():
-    """5. 프롬프트 상세 보기"""
+    """[5번 메뉴] 번호를 선택하면 해당 프롬프트의 전체 '긴 내용'까지 자세히 보여주는 함수"""
     print("\n=== 프롬프트 상세 보기 ===")
     if not prompts:
         print("등록된 프롬프트가 없습니다.")
@@ -172,7 +209,10 @@ def show_detail():
         print("숫자만 입력해 주세요.")
         return
 
+    # 사용자가 입력한 번호를 파이썬 리스트 위치(인덱스)로 맞추기 위해 -1 해줌
     idx = int(val) - 1
+    
+    # 입력한 번호가 실제 존재하는 범위(0 이상, 전체 개수 미만)인지 확인
     if 0 <= idx < len(prompts):
         p = prompts[idx]
         star = get_star(p["favorite"])
@@ -182,14 +222,14 @@ def show_detail():
         print(f"즐겨찾기: {star if star else '☆'}")
         print("────────────────────────────")
         print("내용:")
-        print(p["content"])
+        print(p["content"])  # 본문 전체 출력
         print("────────────────────────────")
     else:
         print("존재하지 않는 프롬프트 번호입니다.")
 
 
 def toggle_favorite():
-    """6. 즐겨찾기 관리"""
+    """[6번 메뉴] 지정한 프롬프트의 즐겨찾기를 켜거나(True) 끄는(False) 함수"""
     print("\n=== 즐겨찾기 관리 ===")
     if not prompts:
         print("등록된 프롬프트가 없습니다.")
@@ -203,8 +243,10 @@ def toggle_favorite():
     idx = int(val) - 1
     if 0 <= idx < len(prompts):
         p = prompts[idx]
-        # 토글 (True -> False / False -> True)
+        
+        # 'not'을 사용하면 True는 False로, False는 True로 반대로 뒤집힙니다 (스위치 역할)
         p["favorite"] = not p["favorite"]
+        
         status = "추가" if p["favorite"] else "해제"
         print(f"'{p['title']}' 프롬프트를 즐겨찾기에 {status}했습니다!")
     else:
@@ -212,14 +254,17 @@ def toggle_favorite():
 
 
 def show_favorites():
-    """7. 즐겨찾기 목록"""
+    """[7번 메뉴] 즐겨찾기(⭐) 설정된 프롬프트만 싹 모아서 보여주는 함수"""
     print("\n=== 즐겨찾기 목록 ===")
+    
+    # favorite 값이 True인 프롬프트만 따로 골라냄
     fav_list = [p for p in prompts if p["favorite"]]
 
     if not fav_list:
         print("즐겨찾기된 프롬프트가 없습니다.")
         return
 
+    # 즐겨찾기된 항목들만 1번부터 새로 번호를 매겨서 화면에 보여줌
     count = 1
     for p in prompts:
         if p["favorite"]:
@@ -229,12 +274,17 @@ def show_favorites():
     print(f"\n총 {len(fav_list)}개의 즐겨찾기")
 
 
+# ==============================================================================
+# 4. 프로그램 시작 및 무한 반복 제어 (엔진 역할)
+# ==============================================================================
+
 def main():
-    """메인 실행 루프"""
-    while True:
+    """프로그램이 켜지면 가장 먼저 실행되어 전체 흐름을 관리하는 메인 함수"""
+    while True:  # 0번(종료)을 누르기 전까지는 메뉴 출력을 계속 무한 반복함
         display_menu()
         choice = input("선택: ").strip()
 
+        # 사용자가 입력한 메뉴 번호에 따라 그에 맞는 함수를 실행시켜 줌
         if choice == "1":
             add_prompt()
         elif choice == "2":
@@ -251,10 +301,11 @@ def main():
             show_favorites()
         elif choice == "0":
             print("\n프로그램을 종료합니다. 이용해 주셔서 감사합니다!")
-            sys.exit(0)
+            sys.exit(0)  # 프로그램을 깔끔하게 강제 종료함
         else:
             print("\n잘못된 선택입니다. 목록에 있는 번호를 입력해주세요.")
 
 
+# 이 파일이 '직접 실행'될 때만 main() 함수를 작동시킵니다.
 if __name__ == "__main__":
     main()
